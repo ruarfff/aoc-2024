@@ -1,4 +1,5 @@
 const std = @import("std");
+const print = std.debug.print;
 
 /// Error type for file operations
 pub const FileError = error{
@@ -24,7 +25,7 @@ pub fn readFileToLines(
     // Create an array list to store the lines
     var lines = std.ArrayList([]u8).init(allocator);
     defer {
-        // If we encounter an error, free any lines we've allocated
+        // If an error, free any lines that were allocated
         if (lines.items.len > 0) {
             for (lines.items) |line| {
                 allocator.free(line);
@@ -34,7 +35,7 @@ pub fn readFileToLines(
 
     // Read the file line by line
     while (true) {
-        var line = reader.readUntilDelimiterAlloc(allocator, '\n', 1024) catch |err| {
+        const line = reader.readUntilDelimiterAlloc(allocator, '\n', 1024) catch |err| {
             if (err == error.EndOfStream) break;
             return err;
         };
@@ -45,46 +46,23 @@ pub fn readFileToLines(
     return lines.toOwnedSlice();
 }
 
-/// Reads a file and returns its contents as a matrix of characters
-/// Caller owns the returned memory
-pub fn readFileToMatrix(
-    allocator: std.mem.Allocator,
-    filepath: []const u8,
-) ![][]u8 {
-    // First read the file into lines
-    const lines = try readFileToLines(allocator, filepath);
+const expect = std.testing.expect;
+const eql = std.mem.eql;
+
+test "read file to lines" {
+    const allocator = std.heap.page_allocator;
+    const lines = try readFileToLines(allocator, "src/util/input.txt");
     defer {
         for (lines) |line| {
             allocator.free(line);
         }
-        allocator.free(lines);
     }
 
-    // Create the matrix with the same number of rows
-    var matrix = try allocator.alloc([]u8, lines.len);
-    errdefer {
-        for (matrix) |row| {
-            allocator.free(row);
-        }
-        allocator.free(matrix);
+    for (lines, 0..) |line, index| {
+        print("{d} - {s}\n", .{ index, line });
     }
 
-    // Find the maximum line length
-    var max_len: usize = 0;
-    for (lines) |line| {
-        max_len = @max(max_len, line.len);
-    }
-
-    // Create each row of the matrix
-    for (lines, 0..) |line, i| {
-        var row = try allocator.alloc(u8, max_len);
-        @memcpy(row[0..line.len], line);
-        // Pad the rest with spaces if needed
-        if (line.len < max_len) {
-            @memset(row[line.len..], ' ');
-        }
-        matrix[i] = row;
-    }
-
-    return matrix;
+    try expect(lines.len == 2);
+    try std.testing.expectEqualStrings(lines[0], "just a file for testing");
+    try std.testing.expectEqualStrings(lines[1], "testing 123");
 }
