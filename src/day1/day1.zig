@@ -48,4 +48,12 @@ pub fn run() !void {
     print("len {d}\n", .{left_list.items.len});
 
     print("Total distance: {d}\n", .{total_distance}); //2114951
+
+    var similarity_score: u32 = 0;
+    // Slow but this is a small data set
+    for (left_list.items) |left| {
+        const count: u32 = @intCast(std.mem.count(u32, right_list.items, &[_]u32{left}));
+        similarity_score += left * count;
+    }
+    print("Similarity score {}\n", .{similarity_score});
 }
