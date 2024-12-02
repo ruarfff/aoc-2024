@@ -5,5 +5,6 @@ const runDay2 = @import("day2/day2.zig").run;
 pub fn main() !void {
     std.debug.print("AOC 2024.\n", .{});
     // try runDay1();
-    try runDay2();
+    // try runDay2(false);
+    try runDay2(true);
 }
