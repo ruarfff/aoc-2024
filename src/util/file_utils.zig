@@ -34,8 +34,9 @@ pub fn readFileToLines(
     }
 
     // Read the file line by line
+    const max_size = 1024 * 1024 * 10; // 10MB
     while (true) {
-        const line = reader.readUntilDelimiterAlloc(allocator, '\n', 1024) catch |err| {
+        const line = reader.readUntilDelimiterAlloc(allocator, '\n', max_size) catch |err| {
             if (err == error.EndOfStream) break;
             return err;
         };
@@ -65,4 +66,16 @@ test "read file to lines" {
     try expect(lines.len == 2);
     try std.testing.expectEqualStrings(lines[0], "just a file for testing");
     try std.testing.expectEqualStrings(lines[1], "testing 123");
+}
+
+test "read file to lines, long lines" {
+    const allocator = std.heap.page_allocator;
+    const lines = try readFileToLines(allocator, "src/util/input_2.txt");
+    defer {
+        for (lines) |line| {
+            allocator.free(line);
+        }
+    }
+
+    try expect(lines.len == 6);
 }
